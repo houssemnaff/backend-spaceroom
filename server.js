@@ -58,6 +58,5 @@ app.use("/notification", require("./routes/notificationrouter"));
 // Routes
 app.use('/api/admin', adminRoutes);
 
-const PORT = parseInt(process.env.PORT, 10);
-
+const PORT = process.env.PORT ;
 server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
