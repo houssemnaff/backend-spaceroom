@@ -16,7 +16,7 @@ const server = http.createServer(app);
 // Create io instance using Server constructor
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "*",
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
     credentials: true,
@@ -35,6 +35,10 @@ app.use(cors());
 app.use((req, res, next) => {
   console.log(`Requête reçue : ${req.method} ${req.url}`);
   next();
+});
+
+app.get("/", (req, res) => {
+  res.send("Server is running 🚀");
 });
 
 // Routes
