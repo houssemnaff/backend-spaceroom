@@ -438,10 +438,17 @@ exports.updateCourse = async (req, res) => {
         }
 
         // Préparer les données de mise à jour
-        const updateData = {
-            title: title || course.title,
-            description: description || course.description
-        };
+        const updateData = {};
+
+        // Mettre à jour le titre si fourni
+        if (title) {
+            updateData.title = title;
+        }
+
+        // Mettre à jour la description si fournie
+        if (description) {
+            updateData.description = description;
+        }
 
         // Si une nouvelle image est fournie, la télécharger
         if (req.file) {
@@ -454,14 +461,11 @@ exports.updateCourse = async (req, res) => {
         // Mettre à jour le cours
         const updatedCourse = await Course.findByIdAndUpdate(
             courseId,
-            updateData,
+            { $set: updateData },
             { new: true }
         ).populate("owner", "name email");
 
-        res.status(200).json({
-            message: "Cours mis à jour avec succès",
-            course: updatedCourse
-        });
+        res.status(200).json(updatedCourse);
     } catch (error) {
         console.error("Erreur lors de la mise à jour du cours :", error);
         res.status(500).json({ message: "Erreur serveur", error: error.message || error });
