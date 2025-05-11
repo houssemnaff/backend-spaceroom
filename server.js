@@ -16,7 +16,7 @@ const server = http.createServer(app);
 // Create io instance using Server constructor
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "*",
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
     credentials: true,

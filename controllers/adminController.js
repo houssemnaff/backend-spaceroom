@@ -619,8 +619,11 @@ const deleteMeeting = async (req, res) => {
 const getAllResources = async (req, res) => {
   try {
     const resources = await Resource.find()
-      .sort({ _id: -1 });
-
+    .sort({ _id: -1 })
+    .populate({
+      path: 'courseId',
+      select: 'title' // uniquement le champ title du cours
+    });
     res.status(200).json(resources);
   } catch (error) {
     console.error('Error fetching resources:', error);
