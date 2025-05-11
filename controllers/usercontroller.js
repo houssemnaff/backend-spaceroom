@@ -1,3 +1,4 @@
+const user = require("../models/user");
 const User = require("../models/user");
 const { uploadImageusers } = require("../utils/imageUpload");
 
@@ -31,8 +32,10 @@ exports.getUserByIdparms = async (req, res) => {
 };
 // Supprimer un utilisateur par ID
 exports.deleteUserById = async (req, res) => {
+    console.log("del ",req.params.id);
     try {
-        const user = await user.findByIdAndDelete(req.params.id);
+        const user1 = await user.findByIdAndDelete(req.params.id);
+        console.log("use del ",user1);
         if (!user) {
             return res.status(404).json({ message: "Utilisateur non trouvé" });
         }

@@ -2,6 +2,8 @@
 const Quiz = require('../models/quizmodelchapitre');
 const QuizAttempt = require('../models/quizattmetpchapitre');
 const mongoose = require('mongoose');
+const notificationService = require('./fonctionnotification');
+const course = require('../models/course');
 
 // Créer un nouveau quiz
 exports.createQuiz = async (req, res) => {
@@ -16,6 +18,7 @@ exports.createQuiz = async (req, res) => {
       availableUntil,
       timeLimit 
     } = req.body;
+    const cc =await course.findById(courseId);
 
     if (!title || !courseId || !chapterId || !questions || !Array.isArray(questions)) {
       return res.status(400).json({
@@ -35,6 +38,21 @@ exports.createQuiz = async (req, res) => {
       timeLimit: timeLimit || 30,
       createdBy: req.user._id
     });
+   
+    // Envoyer une notification à tous les étudiants du cours
+    try {
+      await notificationService.notifyCourseStudents(
+        courseId,
+        "Nouveau quiz disponible",
+        `Un nouveau quiz "${title}" a été ajouté au cours "${cc.title}".`,
+        "assignment",
+        quiz._id,
+        courseId
+      );
+    } catch (notificationError) {
+      console.error("Erreur lors de l'envoi des notifications:", notificationError);
+      // Ne pas bloquer la création du quiz si l'envoi des notifications échoue
+    }
 
     res.status(201).json(quiz);
   } catch (error) {
@@ -92,7 +110,7 @@ exports.getChapterQuizzes = async (req, res) => {
     const quizzes = await Quiz.find({
       chapterId,
       courseId
-    }).select('-questions.options.isCorrect');
+    })
 
     res.status(200).json(quizzes);
   } catch (error) {

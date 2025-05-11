@@ -1,47 +1,131 @@
 const express = require('express');
 const router = express.Router();
-const adminController = require('../controllers/adminController');
-const { protect } = require('../middleware/authMiddleware');
+const { 
+  getDashboardStats, 
+  getStudentEngagement,
+  getGradeDistribution,
+  getActivityHeatmap,
+  getPopularCourses,
+  getTopStudents,
+  getAllCourses,
+  getCourseById,
+  updateCourse,
+  createCourse,
+  deleteCourse,
+  getCourseStats,
+  getAllCoursesWithStats,
+  getAllMeetings,
+  getMeetingById,
+  createMeeting,
+  updateMeeting,
+  deleteMeeting,
+  getAllResources,
+  getResourceById,
+  createResource,
+  updateResource,
+  deleteResource,
+  getUserStats,
+  getAllUsersWithStats,
+  enrollInCourse,
+  unenrollFromCourse,
+  updateUserProgress,
+  getUserProgressForCourse,
+  getSystemOverview,
+  getCategoryDistribution,
+  getStudentSkills,
+  getCourseCompletionRates,
+  getAllChapters,
+  getChapterById,
+  createChapter,
+  updateChapter,
+  deleteChapter,
+  getAllQuizzes,
+  getQuizById,
+  createQuiz,
+  updateQuiz,
+  deleteQuiz,
+  getAllAssignments,
+  getAssignmentById,
+  createAssignment,
+  updateAssignment,
+  deleteAssignment,
+  getTotalCounts
+} = require('../controllers/adminController');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 
+// Dashboard Routes
+router.get('/dashboard/stats', protect, adminOnly, getDashboardStats);
+router.get('/dashboard/engagement', protect, adminOnly, getStudentEngagement);
+router.get('/dashboard/grades', protect, adminOnly, getGradeDistribution);
+router.get('/dashboard/activity', protect, adminOnly, getActivityHeatmap);
+router.get('/dashboard/courses/popular', protect, adminOnly, getPopularCourses);
+router.get('/dashboard/students/top', protect, adminOnly, getTopStudents);
 
+// Course Routes
+router.get('/courses', protect, adminOnly, getAllCourses);
+router.get('/courses/:id', protect, adminOnly, getCourseById);
+router.post('/courses', protect, adminOnly, createCourse);
+router.put('/courses/:id', protect, adminOnly, updateCourse);
+router.delete('/courses/:id', protect, adminOnly, deleteCourse);
 
-// Dashboard statistics
-router.get('/dashboard/stats', protect, adminController.getDashboardStats);
+// Course Statistics Routes
+router.get('/courses/stats/:id', protect, adminOnly, getCourseStats);
+router.get('/courses/all/stats', protect, adminOnly, getAllCoursesWithStats);
 
-// Student engagement data
-router.get('/dashboard/engagement', protect,adminController.getStudentEngagement);
+// Meeting Routes
+router.get('/meetings', protect, adminOnly, getAllMeetings);
+router.get('/meetings/:id', protect, adminOnly, getMeetingById);
+router.post('/meetings', protect, adminOnly, createMeeting);
+router.put('/meetings/:id', protect, adminOnly, updateMeeting);
+router.delete('/meetings/:id', protect, adminOnly, deleteMeeting);
 
-// Grade distribution
-router.get('/dashboard/grades', protect,adminController.getGradeDistribution);
+// Resource Routes
+router.get('/resources', protect, adminOnly, getAllResources);
+router.get('/resources/:id', protect, adminOnly, getResourceById);
+router.post('/resources', protect, adminOnly, createResource);
+router.put('/resources/:id', protect, adminOnly, updateResource);
+router.delete('/resources/:id', protect, adminOnly, deleteResource);
 
-// Activity heatmap
-router.get('/dashboard/activity',protect, adminController.getActivityHeatmap);
+// User Routes
+router.get('/users/stats/:id', protect, adminOnly, getUserStats);
+router.get('/users/all/stats', protect, adminOnly, getAllUsersWithStats);
 
-// Top students
-router.get('/dashboard/top-students', protect,adminController.getTopStudents);
+// Enrollment Routes
+router.post('/enroll', protect, enrollInCourse);
+router.delete('/enroll/:id', protect, unenrollFromCourse);
 
-// Popular courses
-router.get('/dashboard/popular-courses',protect, adminController.getPopularCourses);
+// Progress Routes
+router.post('/progress', protect, updateUserProgress);
+router.get('/progress/:courseId', protect, getUserProgressForCourse);
 
-// Course Management
-router.get('/courses', protect,adminController.getAllCourses);
-router.get('/courses/:id',protect, adminController.getCourseById);
-router.post('/courses', protect,adminController.createCourse);
-router.put('/courses/:id',protect, adminController.updateCourse);
-router.delete('/courses/:id',protect, adminController.deleteCourse);
+// Analytics Routes
+router.get('/analytics/overview', protect, adminOnly, getSystemOverview);
+router.get('/analytics/categories', protect, adminOnly, getCategoryDistribution);
+router.get('/analytics/completion-rates', protect, adminOnly, getCourseCompletionRates);
+router.get('/analytics/student-skills/:id', protect, adminOnly, getStudentSkills);
 
-// Meeting Management Routes
-router.get('/meetings',protect, adminController.getAllMeetings);
-router.get('/meetings/:id',protect, adminController.getMeetingById);
-router.post('/meetings', protect,adminController.createMeeting);
-router.put('/meetings/:id',protect, adminController.updateMeeting);
-router.delete('/meetings/:id',protect, adminController.deleteMeeting);
+// Chapter Routes
+router.get('/chapters', protect, adminOnly, getAllChapters);
+router.get('/chapters/:id', protect, adminOnly, getChapterById);
+router.post('/chapters', protect, adminOnly, createChapter);
+router.put('/chapters/:id', protect, adminOnly, updateChapter);
+router.delete('/chapters/:id', protect, adminOnly, deleteChapter);
 
-// Resource Management Routes
-router.get('/resources', protect,adminController.getAllResources);
-router.get('/resources/:id', protect,adminController.getResourceById);
-router.post('/resources', protect,adminController.createResource);
-router.put('/resources/:id', protect,adminController.updateResource);
-router.delete('/resources/:id',protect, adminController.deleteResource);
+// Quiz Routes
+router.get('/quizzes', protect, adminOnly, getAllQuizzes);
+router.get('/quizzes/:id', protect, adminOnly, getQuizById);
+router.post('/quizzes', protect, adminOnly, createQuiz);
+router.put('/quizzes/:id', protect, adminOnly, updateQuiz);
+router.delete('/quizzes/:id', protect, adminOnly, deleteQuiz);
 
-module.exports = router; 
+// Assignment Routes
+router.get('/assignments', protect, adminOnly, getAllAssignments);
+router.get('/assignments/:id', protect, adminOnly, getAssignmentById);
+router.post('/assignments', protect, adminOnly, createAssignment);
+router.put('/assignments/:id', protect, adminOnly, updateAssignment);
+router.delete('/assignments/:id', protect, adminOnly, deleteAssignment);
+
+// Total Counts Route
+router.get('/counts', protect, adminOnly, getTotalCounts);
+
+module.exports = router;

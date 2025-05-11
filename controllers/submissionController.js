@@ -3,7 +3,7 @@ const { markAssignmentCompleted } = require('./userprogressconttroller');
 const notificationService = require("../controllers/fonctionnotification");
 const User = require("../models/user");
 const Course = require("../models/course");
-const Submission = require('../models/submission');
+const Submission = require('../models/Submission');
 
 exports.submitAssignment = async (req, res) => {
   try {

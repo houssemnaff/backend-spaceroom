@@ -5,7 +5,7 @@ const {
   addResource, 
   getMyCourses, 
   deleteCourse, 
-  deleteResource, 
+   
   getJoinedCourses,
   getCourseDetails,
   joincourlink,
@@ -33,10 +33,10 @@ router.get("/my-join-courses", protect,getJoinedCourses); // Récupérer les cou
 router.get("/:courseId", getCourseDetails); // Route pour récupérer les détails d'un cours
 router.get("/:courseId/students", protect, getcourstudents);
 router.delete("/:courseId",protect, deleteCourse); // Supprimer un cours
-router.delete("/:courseId/resource/:resourceId",protect, deleteResource); // Supprimer une ressource
+//router.delete("/:courseId/resource/:resourceId",protect, deleteResource); // Supprimer une ressource
 router.delete("/:courseId/students/:studentId",protect, deletestudentfromcour); 
 router.post("/:courseId/invite", protect,inviteStudentToCourse);
-router.put("/:courseId", protect, uploadMiddleware, updateCourse); // Mettre à jour un cours
+router.put("/:courseId", protect, upload, updateCourse); // Mettre à jour un cours
 
 // chapitre
 router.post("/:courseId/add-chapter", addChapterToCourse); // Ajouter un chapitre à un cours

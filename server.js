@@ -6,7 +6,7 @@ const cors = require("cors");
 const { Server } = require("socket.io"); // Import Server from socket.io
 const connectDB = require("./config/db");
 const adminRoutes = require('./routes/adminRoutes');
-
+const supportRoutes = require('./routes/supportrouter');
 dotenv.config();
 connectDB();
 
@@ -16,7 +16,7 @@ const server = http.createServer(app);
 // Create io instance using Server constructor
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "http://localhost:5173",
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
     credentials: true,
@@ -37,10 +37,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
-});
-
 // Routes
 app.use("/auth0", require("./routes/authRoutes"));
 app.use("/users", require("./routes/userRoutes"));
@@ -50,6 +46,7 @@ app.use("/courssubmission", require("./routes/submissions"));
 //app.use("/quiz", require("./routes/quizrouters"));
 app.use("/quizch", require("./routes/quizrouterchapitre"));
 
+app.use('/api/support', supportRoutes);
 
 app.use("/meetings", require("./routes/meetingrouters"));
 app.use("/notification", require("./routes/notificationrouter"));
@@ -58,5 +55,5 @@ app.use("/notification", require("./routes/notificationrouter"));
 // Routes
 app.use('/api/admin', adminRoutes);
 
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

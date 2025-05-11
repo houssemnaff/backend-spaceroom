@@ -2,45 +2,77 @@ const Assignment = require("../models/Assignment");
 const Ressource = require("../models/ressource");
 const UserProgress = require("../models/UserProgress");
 const Chapter = require("../models/chapter");
+const Quiz = require("../models/quizmodelchapitre");
+const QuizAttempt = require("../models/quizattmetpchapitre");
 
-// Marquer une ressource comme vue
+// ✅ Fonction utilitaire pour mettre à jour la progression
+exports.updateProgressPercentage = async function (userId, courseId) {
+  const totalResources = await Ressource.countDocuments({ courseId });
+  const totalAssignments = await Assignment.countDocuments({ courseId });
+  const totalQuizzes = await Quiz.countDocuments({ courseId });
+
+  const progress = await UserProgress.findOne({ userId, courseId });
+
+  const completedQuizzes = await QuizAttempt.countDocuments({
+    userId,
+    courseId,
+    completed: true
+  });
+
+  const totalElements = totalResources + totalAssignments + totalQuizzes;
+  const completedElements = 
+    (progress?.viewedResources?.length || 0) + 
+    (progress?.completedAssignments?.length || 0) + 
+    completedQuizzes;
+
+  const percentage = totalElements > 0 
+    ? Math.min((completedElements / totalElements) * 100, 100) 
+    : 0;
+
+  progress.progressPercentage = percentage;
+  await progress.save();
+
+  return percentage;
+}
+
+// ✅ Marquer une ressource comme vue
 exports.markResourceViewed = async (req, res) => {
   const { userId, courseId, resourceId, chapterId } = req.body;
 
   try {
-    // Vérifier si la ressource existe
     const resource = await Ressource.findById(resourceId);
     if (!resource) {
       return res.status(404).json({ message: "Ressource non trouvée" });
     }
 
-    // Trouver ou créer un enregistrement de progression
     let progress = await UserProgress.findOne({ userId, courseId });
     if (!progress) {
-      progress = new UserProgress({ 
-        userId, 
-        courseId, 
-        viewedResources: [], 
-        completedAssignments: [],
-        viewedChapters: []
-      });
+      progress = new UserProgress({ userId, courseId });
     }
+    
+    // ✅ Initialiser les tableaux s’ils sont undefined
+    progress.viewedResources = progress.viewedResources || [];
+    progress.completedAssignments = progress.completedAssignments || [];
+    progress.completedQuizzes = progress.completedQuizzes || [];
+    progress.viewedChapters = progress.viewedChapters || [];
+    
 
-    // Ajouter la ressource aux ressources vues
     if (!progress.viewedResources.includes(resourceId)) {
       progress.viewedResources.push(resourceId);
     }
 
-    // Ajouter le chapitre si nécessaire
     if (chapterId && !progress.viewedChapters.includes(chapterId)) {
       progress.viewedChapters.push(chapterId);
     }
 
     await progress.save();
 
+    const progressPercentage = await this.updateProgressPercentage(userId, courseId);
+
     res.json({ 
       message: "Ressource marquée comme vue", 
-      progress 
+      progress,
+      progressPercentage
     });
 
   } catch (err) {
@@ -48,76 +80,78 @@ exports.markResourceViewed = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// ✅ Marquer un devoir comme complété
 exports.markAssignmentCompleted = async (userId, courseId, assignmentId) => {
-  // Vérifier si le devoir existe
   const assignment = await Assignment.findById(assignmentId);
   if (!assignment) {
     throw new Error("Devoir non trouvé");
   }
 
-  // Trouver ou créer un enregistrement de progression
   let progress = await UserProgress.findOne({ userId, courseId });
-  
   if (!progress) {
     progress = new UserProgress({ 
       userId, 
       courseId, 
       viewedResources: [], 
       completedAssignments: [],
-      viewedChapters: []
+      completedQuizzes: [],
+      viewedChapters: [],
+      progressPercentage: 0
     });
   }
 
-  // Ajouter le devoir aux devoirs complétés (sans doublon)
   if (!progress.completedAssignments.includes(assignmentId)) {
     progress.completedAssignments.push(assignmentId);
     await progress.save();
   }
 
+  await updateProgressPercentage(userId, courseId);
+
   return progress;
 };
-// Obtenir la progression d'un utilisateur pour un cours
+
+// ✅ Obtenir la progression complète
 exports.getCourseProgress = async (req, res) => {
   const { userId, courseId } = req.params;
 
   try {
-    // Compter les ressources totales du cours
     const totalResources = await Ressource.countDocuments({ courseId });
-    
-    // Compter les devoirs totaux du cours
     const totalAssignments = await Assignment.countDocuments({ courseId });
-    
-    // Compter les chapitres du cours
-    const totalChapters = await Chapter.countDocuments({ courseId });
+    const totalQuizzes = await Quiz.countDocuments({ courseId });
 
-    // Trouver la progression de l'utilisateur
     const progress = await UserProgress.findOne({ userId, courseId }) || { 
       viewedResources: [], 
       completedAssignments: [],
-      viewedChapters: []
+      completedQuizzes: [],
+      progressPercentage: 0
     };
 
-    // Calculer le nombre total d'éléments
-    const totalElements = totalResources + totalAssignments + totalChapters;
+    const completedQuizzes = await QuizAttempt.countDocuments({
+      userId,
+      courseId,
+      completed: true
+    });
+
+    const totalElements = totalResources + totalAssignments + totalQuizzes;
     const completedElements = 
       progress.viewedResources.length + 
       progress.completedAssignments.length + 
-      progress.viewedChapters.length;
+      completedQuizzes;
 
-    // Calculer le pourcentage de progression
     const progressPercentage = totalElements > 0 
       ? Math.min((completedElements / totalElements) * 100, 100) 
       : 0;
 
     res.json({ 
       progress: {
-        progressPercentage,
+        progressPercentage: progress.progressPercentage || progressPercentage,
         viewedResources: progress.viewedResources.length,
         completedAssignments: progress.completedAssignments.length,
-        viewedChapters: progress.viewedChapters.length,
+        completedQuizzes,
         totalResources,
         totalAssignments,
-        totalChapters
+        totalQuizzes
       }
     });
 

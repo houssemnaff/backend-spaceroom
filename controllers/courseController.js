@@ -9,6 +9,7 @@ const course = require("../models/course");
 const Chapter = require("../models/chapter");
 const ressource = require("../models/ressource");
 const sendEmail = require("./emailcontroller");
+const UserProgress = require("../models/UserProgress");
 
 exports.createCourse = async (req, res) => {
     try {
@@ -120,7 +121,7 @@ exports.getMyCourses = async (req, res) => {
     try {
         // Trouver uniquement les cours où l'utilisateur est le propriétaire
         const courses = await Course.find({ owner: req.user.id }).populate("owner", "name email");
-
+       
         res.status(200).json({ courses });
     } catch (error) {
         res.status(500).json({ message: "Erreur serveur", error });
@@ -176,27 +177,54 @@ exports.deleteCourse = async (req, res) => {
         res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
 };
-
-
-// 📌 6. Supprimer une ressource d'un cours
+const Resource = require("../models/ressource");
+const { default: mongoose } = require("mongoose");
+/*
 exports.deleteResource = async (req, res) => {
-    try {
-        const { courseId, resourceId } = req.params;
+  console.log("resourceId");
+  try {
+    const { courseId, resourceId } = req.params;
+    console.log("resourceId",resourceId);
 
-        const course = await Course.findById(courseId);
-        if (!course) return res.status(404).json({ message: "Cours introuvable" });
-
-        if (course.owner.toString() !== req.user.id)
-            return res.status(403).json({ message: "Vous n'êtes pas autorisé à modifier ce cours" });
-
-        course.resources = course.resources.filter(resource => resource._id.toString() !== resourceId);
-        await course.save();
-
-        res.status(200).json({ message: "Ressource supprimée", course });
-    } catch (error) {
-        res.status(500).json({ message: "Erreur serveur", error });
+    // Vérifie si le cours existe
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Cours introuvable" });
     }
+
+    // Vérifie que l'utilisateur est bien le propriétaire
+    if (course.owner.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Non autorisé" });
+    }
+
+    // Supprime la ressource du tableau `resources` du cours
+    course.resources = course.resources.filter(
+      (resource) => resource._id.toString() !== resourceId
+    );
+    await course.save();
+
+    // Supprime l'objet Resource de la collection
+    await Resource.findByIdAndDelete(resourceId);
+
+   // 🔥 Très important : convertir resourceId en ObjectId
+   const resourceObjectId = new mongoose.Types.ObjectId(resourceId);
+console.log("resourceId",resourceId);
+console.log("resourceObjectId",resourceObjectId);
+
+   // Supprimer la ressource dans UserProgress de tous les étudiants
+   await UserProgress.updateMany(
+     { courseId },
+     { $pull: { viewedResources: resourceObjectId } }
+   );
+
+    res.status(200).json({ message: "Ressource supprimée et progression mise à jour", course });
+
+  } catch (error) {
+    console.error("Erreur lors de la suppression de la ressource:", error);
+    res.status(500).json({ message: "Erreur serveur", error });
+  }
 };
+*/
 
 
 exports.getCourseDetails = async (req, res) => {
@@ -419,55 +447,69 @@ L'équipe de la plateforme de cours
     });
   }
 };
-
 // 📌 Mettre à jour un cours
 exports.updateCourse = async (req, res) => {
     try {
-        const { courseId } = req.params;
-        const { title, description } = req.body;
-
-        // Vérifier si le cours existe
-        const course = await Course.findById(courseId);
-        if (!course) {
-            return res.status(404).json({ message: "Cours introuvable" });
+      const { courseId } = req.params;
+      
+      // Déboguer ce que le backend reçoit
+      console.log("Backend received body:", req.body);
+      console.log("Backend received files:", req.file);
+      
+      // Récupérer le title et description du formulaire 
+      // ou utiliser les valeurs existantes si non fournis
+      const title = req.body.title;
+      const description = req.body.description;
+      
+      console.log("Traitement des données:", title, description);
+      
+      // Vérifier si le cours existe
+      const course = await Course.findById(courseId);
+      if (!course) {
+        return res.status(404).json({ message: "Cours introuvable" });
+      }
+      
+      // Vérifier si l'utilisateur est le propriétaire du cours
+      if (course.owner.toString() !== req.user.id) {
+        return res.status(403).json({ message: "Vous n'êtes pas autorisé à modifier ce cours" });
+      }
+      
+      // Préparer les données de mise à jour en utilisant les valeurs existantes 
+      // si les nouvelles ne sont pas fournies
+      const updateData = {};
+      
+      // N'ajouter que les champs qui sont définis
+      if (title !== undefined) {
+        updateData.title = title;
+      }
+      
+      if (description !== undefined) {
+        updateData.description = description;
+      }
+      
+      // Si une nouvelle image est fournie, la télécharger
+      if (req.file) {
+        const imageurl = await uploadImage(req);
+        if (imageurl) {
+          updateData.imageurl = imageurl;
         }
-
-        // Vérifier si l'utilisateur est le propriétaire du cours
-        if (course.owner.toString() !== req.user.id) {
-            return res.status(403).json({ message: "Vous n'êtes pas autorisé à modifier ce cours" });
-        }
-
-        // Préparer les données de mise à jour
-        const updateData = {};
-
-        // Mettre à jour le titre si fourni
-        if (title) {
-            updateData.title = title;
-        }
-
-        // Mettre à jour la description si fournie
-        if (description) {
-            updateData.description = description;
-        }
-
-        // Si une nouvelle image est fournie, la télécharger
-        if (req.file) {
-            const imageurl = await uploadImage(req);
-            if (imageurl) {
-                updateData.imageurl = imageurl;
-            }
-        }
-
-        // Mettre à jour le cours
-        const updatedCourse = await Course.findByIdAndUpdate(
-            courseId,
-            { $set: updateData },
-            { new: true }
-        ).populate("owner", "name email");
-
-        res.status(200).json(updatedCourse);
+      }
+      
+      console.log("Données finales pour mise à jour:", updateData);
+      
+      // Mettre à jour le cours seulement avec les champs qui ont été fournis
+      const updatedCourse = await Course.findByIdAndUpdate(
+        courseId,
+        updateData,
+        { new: true }
+      ).populate("owner", "name email");
+      
+      res.status(200).json({
+        message: "Cours mis à jour avec succès",
+        course: updatedCourse
+      });
     } catch (error) {
-        console.error("Erreur lors de la mise à jour du cours :", error);
-        res.status(500).json({ message: "Erreur serveur", error: error.message || error });
+      console.error("Erreur lors de la mise à jour du cours :", error);
+      res.status(500).json({ message: "Erreur serveur", error: error.message || error });
     }
-};
+  };

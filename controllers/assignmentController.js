@@ -1,5 +1,6 @@
 const Assignment = require('../models/Assignment');
-const Submission = require('../models/submission');
+const Submission = require('../models/Submission');
+const UserProgress = require('../models/UserProgress');
 // Créer un nouveau devoir
 exports.createAssignment = async (req, res) => {
     try {
@@ -130,8 +131,16 @@ exports.deleteAssignment = async (req, res) => {
       return res.status(403).json({ message: "Vous n'êtes pas autorisé à supprimer ce devoir" });
     }
 
-    // Supprimer également les soumissions associées
+    // Supprimer les soumissions associées
     await Submission.deleteMany({ assignmentId: req.params.id });
+
+    // Nettoyer les UserProgress
+    await UserProgress.updateMany(
+      { completedAssignments: req.params.id },
+      { $pull: { completedAssignments: req.params.id } }
+    );
+
+    // Supprimer le devoir
     await Assignment.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ message: "Devoir supprimé avec succès" });

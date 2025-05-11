@@ -4,6 +4,9 @@ const cloudinary = require('../config/cloudinaryConfig');  // Assurez-vous que l
 const ressource = require("../models/ressource");
 const sendEmail = require("./emailcontroller");
 const notificationService = require("../controllers/fonctionnotification");
+const UserProgress = require("../models/UserProgress");
+const { default: mongoose } = require("mongoose");
+const { updateProgressPercentage } = require("./userprogressconttroller");
 
 // Ajouter un chapitre à un cours
 const addChapterToCourse = async (req, res) => {
@@ -309,6 +312,20 @@ const deleteResourceFromChapter = async (req, res) => {
 
     // Supprimer la ressource de la base de données
     await ressource.findByIdAndDelete(resourceId);
+     // Supprimer la ressource des viewedResources de tous les étudiants
+     const resourceObjectId = new mongoose.Types.ObjectId(resourceId);
+    // console.log("resourceId    ,  resourceObjectId ",resourceId,resourceObjectId);
+
+     await UserProgress.updateMany(
+       { courseId: course._id },
+       { $pull: { viewedResources: resourceObjectId } }
+     );
+      // Recalculer la progression pour tous les étudiants du cours
+    const progresses = await UserProgress.find({ courseId });
+    for (const progress of progresses) {
+      
+      await updateProgressPercentage(progress.userId, courseId);
+    }
 
     res.status(200).json({ message: "Ressource supprimée avec succès du chapitre" });
   } catch (error) {
