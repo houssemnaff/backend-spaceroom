@@ -1,5 +1,5 @@
 const Assignment = require('../models/Assignment');
-const Submission = require('../models/Submission');
+const Submission = require('../models/submission');
 const UserProgress = require('../models/UserProgress');
 // Créer un nouveau devoir
 exports.createAssignment = async (req, res) => {
